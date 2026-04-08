@@ -1,10 +1,11 @@
-"""Build a YOLO-style dataset split from annotated Bench images.
+"""Build a YOLOv8 dataset split from annotated Bench images.
 
 Workflow:
 1. Scan image directory and label directory.
 2. Remove unannotated images (optional) or skip them.
 3. Split matched image/label pairs into train/val/test.
-4. Copy files to output directory with YOLO-compatible structure.
+4. Copy files to output directory with train/valid/test layout.
+5. Write ``data.yaml`` for YOLOv8 training.
 """
 
 from __future__ import annotations
@@ -125,39 +126,45 @@ def split_pairs(
 
 
 def ensure_split_dirs(output_dir: Path) -> None:
-    """Create YOLO-style output directories for images and labels."""
-    for kind in ("images", "labels"):
-        for split_name in ("train", "val", "test"):
-            (output_dir / kind / split_name).mkdir(parents=True, exist_ok=True)
+    """Create YOLOv8-style output directories for images and labels."""
+    for split_name in ("train", "valid", "test"):
+        (output_dir / split_name / "images").mkdir(parents=True, exist_ok=True)
+        (output_dir / split_name / "labels").mkdir(parents=True, exist_ok=True)
 
 
 def copy_split(split_pairs_list: Sequence[Pair], split_name: str, output_dir: Path) -> None:
     """Copy image/label files for one split into output structure."""
     for pair in split_pairs_list:
-        image_dest = output_dir / "images" / split_name / pair.image_path.name
-        label_dest = output_dir / "labels" / split_name / f"{pair.image_path.stem}.txt"
+        image_dest = output_dir / split_name / "images" / pair.image_path.name
+        label_dest = output_dir / split_name / "labels" / f"{pair.image_path.stem}.txt"
         shutil.copy2(pair.image_path, image_dest)
         shutil.copy2(pair.label_path, label_dest)
 
 
-def write_split_lists(
+def write_data_yaml(
     output_dir: Path,
-    train_pairs: Sequence[Pair],
-    val_pairs: Sequence[Pair],
-    test_pairs: Sequence[Pair],
+    train_ref: str,
+    val_ref: str,
+    test_ref: str,
+    class_names: Sequence[str],
+    nc: int | None,
 ) -> None:
-    """Write ``train.txt``, ``val.txt``, and ``test.txt`` with image paths."""
-
-    def write_one(filename: str, split_name: str, items: Sequence[Pair]) -> None:
-        list_path = output_dir / filename
-        with list_path.open("w", encoding="utf-8") as handle:
-            for pair in items:
-                handle.write(str((output_dir / "images" / split_name / pair.image_path.name).resolve()))
-                handle.write("\n")
-
-    write_one("train.txt", "train", train_pairs)
-    write_one("val.txt", "val", val_pairs)
-    write_one("test.txt", "test", test_pairs)
+    """Write YOLOv8 ``data.yaml`` in the requested format."""
+    data_yaml_path = output_dir / "data.yaml"
+    resolved_nc = len(class_names) if nc is None else nc
+    if resolved_nc != len(class_names):
+        raise ValueError(
+            f"Invalid class configuration: nc={resolved_nc} but names has {len(class_names)} entries."
+        )
+    names_literal = "[" + ", ".join(repr(name) for name in class_names) + "]"
+    content = (
+        f"train: {train_ref}\n"
+        f"val: {val_ref}\n"
+        f"test: {test_ref}\n\n"
+        f"nc: {resolved_nc}\n"
+        f"names: {names_literal}\n"
+    )
+    data_yaml_path.write_text(content, encoding="utf-8")
 
 
 def build_dataset(
@@ -169,6 +176,11 @@ def build_dataset(
     test_ratio: float,
     seed: int,
     delete_unannotated: bool,
+    train_ref: str,
+    val_ref: str,
+    test_ref: str,
+    class_names: Sequence[str],
+    nc: int | None,
 ) -> dict:
     """Build the dataset and return a summary dictionary."""
     images = find_images(images_dir)
@@ -189,9 +201,16 @@ def build_dataset(
     )
 
     copy_split(train_pairs, "train", output_dir)
-    copy_split(val_pairs, "val", output_dir)
+    copy_split(val_pairs, "valid", output_dir)
     copy_split(test_pairs, "test", output_dir)
-    write_split_lists(output_dir, train_pairs, val_pairs, test_pairs)
+    write_data_yaml(
+        output_dir=output_dir,
+        train_ref=train_ref,
+        val_ref=val_ref,
+        test_ref=test_ref,
+        class_names=class_names,
+        nc=nc,
+    )
 
     return {
         "total_images_found": len(images),
@@ -201,6 +220,7 @@ def build_dataset(
         "train_count": len(train_pairs),
         "val_count": len(val_pairs),
         "test_count": len(test_pairs),
+        "data_yaml": str((output_dir / "data.yaml").resolve()),
         "output_dir": str(output_dir.resolve()),
     }
 
@@ -232,6 +252,33 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Delete unannotated images from the source images directory.",
     )
+    parser.add_argument(
+        "--train-ref",
+        default="../train/images",
+        help="Value for the 'train:' field in data.yaml.",
+    )
+    parser.add_argument(
+        "--val-ref",
+        default="../valid/images",
+        help="Value for the 'val:' field in data.yaml.",
+    )
+    parser.add_argument(
+        "--test-ref",
+        default="../test/images",
+        help="Value for the 'test:' field in data.yaml.",
+    )
+    parser.add_argument(
+        "--class-names",
+        nargs="+",
+        default=["bench"],
+        help="Class names for data.yaml names list.",
+    )
+    parser.add_argument(
+        "--nc",
+        type=int,
+        default=None,
+        help="Number of classes for data.yaml (default: inferred from --class-names).",
+    )
     return parser.parse_args()
 
 
@@ -247,6 +294,11 @@ def main() -> None:
         test_ratio=args.test_ratio,
         seed=args.seed,
         delete_unannotated=args.delete_unannotated,
+        train_ref=args.train_ref,
+        val_ref=args.val_ref,
+        test_ref=args.test_ref,
+        class_names=args.class_names,
+        nc=args.nc,
     )
 
     print("Dataset build complete:")
