@@ -1,0 +1,30 @@
+------------------------------
+Train instances info
+ ----- each class info -----
+Bike                  : 323
+Building              : 886
+Car                   : 4328
+Person                : 7609
+Stairs                : 1125
+Traffic sign          : 689
+Electrical Pole       : 491
+Road                  : 561
+Motorcycle            : 888
+Dustbin               : 1351
+Dog                   : 633
+Manhole               : 1779
+Tree                  : 1632
+Guard rail            : 1385
+Pedestrian crosswalk  : 1875
+Truck                 : 621
+Bus                   : 1009
+Bench                 : 706
+Traffic Cone          : 678
+Fire hydrant          : 205
+Teraffic Barrel       : 540
+Plant Pot             : 560
+Electrical Box        : 450
+Chair                 : 1757
+Bicycle Rack          : 170
+ ----- total instances: 32251
+------------------------------------------------------------

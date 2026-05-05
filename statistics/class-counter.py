@@ -5,11 +5,12 @@ DATASET_DIR = r"."
 
 SPLITS = ["train", "valid", "test"]
 
-# Class list (index = class id)
+# Class list (index = class id) - aligned with dataset/dataset/data.yaml
 CLASS_NAMES = [
     'Bike', 'Building', 'Car', 'Person', 'Stairs', 'Traffic sign', 'Electrical Pole',
     'Road', 'Motorcycle', 'Dustbin', 'Dog', 'Manhole', 'Tree', 'Guard rail',
-    'Pedestrian crosswalk', 'Truck', 'Bus', 'Bench'
+    'Pedestrian crosswalk', 'Truck', 'Bus', 'Bench', 'Traffic Cone', 'Fire hydrant',
+    'Teraffic Barrel', 'Plant Pot', 'Electrical Box', 'Chair', 'Bicycle Rack'
 ]
 
 def count_split(split_dir):

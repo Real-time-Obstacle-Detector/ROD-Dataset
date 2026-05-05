@@ -1,0 +1,30 @@
+------------------------------
+Valid instances info
+ ----- each class info -----
+Bike                  : 95
+Building              : 101
+Car                   : 1003
+Person                : 1033
+Stairs                : 339
+Traffic sign          : 114
+Electrical Pole       : 85
+Road                  : 84
+Motorcycle            : 82
+Dustbin               : 153
+Dog                   : 65
+Manhole               : 480
+Tree                  : 293
+Guard rail            : 131
+Pedestrian crosswalk  : 429
+Truck                 : 159
+Bus                   : 150
+Bench                 : 40
+Traffic Cone          : 171
+Fire hydrant          : 25
+Teraffic Barrel       : 17
+Plant Pot             : 37
+Electrical Box        : 29
+Chair                 : 419
+Bicycle Rack          : 38
+ ----- total instances: 5572
+------------------------------------------------------------
